@@ -1,0 +1,104 @@
+# Training Data Generation Configuration
+
+# Code Analysis Settings
+code_analysis:
+  # Supported programming languages
+  languages:
+    - python
+    - javascript
+    - typescript
+    - java
+  
+  # Maximum depth for code structure analysis
+  max_depth: 5
+  
+  # File patterns to include/exclude
+  include_patterns:
+    - "**/*.py"
+    - "**/*.js"
+    - "**/*.ts"
+    - "**/*.java"
+  
+  exclude_patterns:
+    - "**/node_modules/**"
+    - "**/venv/**"
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/__pycache__/**"
+    - "**/test/**"
+    - "**/tests/**"
+
+# Data Generation Settings
+generation:
+  # Number of samples to generate per scenario
+  samples_per_scenario: 50
+  
+  # Quality threshold (0-1)
+  quality_threshold: 0.7
+  
+  # Diversity control
+  diversity:
+    max_similar_questions: 3
+    min_code_complexity: 2
+  
+  # LLM settings
+  llm:
+    provider: "openai"  # or "anthropic"
+    model: "gpt-4-turbo-preview"
+    temperature: 0.7
+    max_tokens: 2048
+    retry_attempts: 3
+
+# Scenario 1: Q&A Generation
+scenario1_qa:
+  question_types:
+    - "code_explanation"
+    - "business_logic"
+    - "design_pattern"
+    - "error_handling"
+    - "performance_optimization"
+  
+  # Include reasoning trace
+  include_reasoning: true
+  
+  # Context window size (lines of code)
+  context_window: 50
+
+# Scenario 2: Design Solution Generation
+scenario2_design:
+  requirement_types:
+    - "new_feature"
+    - "refactoring"
+    - "integration"
+    - "optimization"
+  
+  # Architecture analysis depth
+  architecture_depth: 3
+  
+  # Include implementation suggestions
+  include_implementation: true
+
+# Data Quality Control
+quality_control:
+  # Validation checks
+  validation:
+    check_code_validity: true
+    check_reasoning_completeness: true
+    check_answer_relevance: true
+  
+  # Filtering criteria
+  filters:
+    min_question_length: 10
+    min_answer_length: 50
+    min_code_snippet_lines: 5
+
+# Output Settings
+output:
+  format: "jsonl"  # jsonl, json, or parquet
+  split_ratios:
+    train: 0.8
+    validation: 0.1
+    test: 0.1
+  
+  # Save reasoning traces separately
+  save_traces: true

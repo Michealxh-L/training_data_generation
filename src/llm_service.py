@@ -8,6 +8,11 @@ from openai import OpenAI
 from anthropic import Anthropic
 import time
 
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
 
 class LLMService:
     """Service for interacting with LLM APIs"""
@@ -22,6 +27,12 @@ class LLMService:
         elif self.provider == "anthropic":
             self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
             self.model = model or os.getenv("ANTHROPIC_MODEL", "claude-3-sonnet-20240229")
+        elif self.provider == "gemini":
+            if genai is None:
+                raise ImportError("google-generativeai not installed. Install with: pip install google-generativeai")
+            genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+            self.model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+            self.client = genai.GenerativeModel(self.model)
         else:
             raise ValueError(f"Unsupported provider: {provider}")
     
@@ -61,6 +72,27 @@ class LLMService:
                 
                 response = self.client.messages.create(**kwargs)
                 return response.content[0].text
+            
+            elif self.provider == "gemini":
+                # Combine system prompt and user prompt for Gemini
+                full_prompt = prompt
+                if system_prompt:
+                    full_prompt = f"{system_prompt}\n\n{prompt}"
+                
+                # Configure generation
+                generation_config = {
+                    "temperature": self.temperature,
+                    "max_output_tokens": max_tokens,
+                }
+                
+                if json_mode:
+                    full_prompt += "\n\nPlease respond with valid JSON only."
+                
+                response = self.client.generate_content(
+                    full_prompt,
+                    generation_config=generation_config
+                )
+                return response.text
         
         except Exception as e:
             print(f"❌ Error generating completion: {e}")

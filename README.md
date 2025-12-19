@@ -82,7 +82,7 @@ python main.py --repo-path ./project --scenario both --num-qa 30
 
 ## 配置
 
-编辑 `config/simple_config.yaml`:
+编辑 `config/config.yaml`:
 ```yaml
 llm:
   provider: "gemini"
@@ -93,6 +93,7 @@ generation:
   num_qa_pairs: 10
   num_design_solutions: 5
   use_context: true  # 启用项目上下文分析
+  context_level: "standard"  # minimal/standard/full
 ```
 ## 使用示例
 
@@ -114,36 +115,7 @@ python simple_example.py
 
 ---
 
-### 2. 多层次问答生成 (test_multilevel.py)
-
-**配置驱动**，支持三级上下文系统：
-
-```bash
-python test_multilevel.py
-```
-
-**特点：**
-- 基于 `test_config.json` 配置文件
-- 支持代码实现层/模块设计层/系统架构层问题生成
-- 自动生成统计报告
-
-**配置示例：**
-```json
-{
-  "project": {
-    "path": "./your-project",
-    "name": "MyProject"
-  },
-  "generation": {
-    "num_qa_pairs": 15,
-    "context_levels": ["minimal", "standard", "full"]
-  }
-}
-```
-
----
-
-### 3. 完整流程 (main.py)
+### 2. 完整流程 (main.py)
 
 **功能最完整**，包含代码分析、质量评分、数据验证：
 
@@ -165,13 +137,14 @@ python main.py \
 - `--output-dir`: 输出目录
 
 **输出文件：**
-- `qa_pairs_[timestamp].json` - 问答对数据
-- `design_solutions_[timestamp].json` - 设计方案数据
-- `quality_report_[timestamp].json` - 质量报告
+- `qa_pairs.json` / `qa_pairs.jsonl` - 问答对数据
+- `quality_report.json` - 质量报告
+- `finetuning_data.jsonl` - 微调格式数据
+- `train.jsonl` / `validation.jsonl` / `test.jsonl` - 训练/验证/测试集
 
 ---
 
-### 4. Jupyter Notebook
+### 3. Jupyter Notebook
 
 #### QuickStart_Tutorial.ipynb（推荐）
 
@@ -188,17 +161,8 @@ jupyter notebook QuickStart_Tutorial.ipynb
 4. 数据格式和质量分析
 5. 常见问题排查
 
-#### Agent_OM_Gemini_Test.ipynb
 
-**特定项目测试**，针对 Agent-OM 项目：
-
-```bash
-jupyter notebook Agent_OM_Gemini_Test.ipynb
-```
-
----
-
-### 5. API连接测试
+### 4. API连接测试
 
 在生成数据前测试API连接：
 
@@ -217,20 +181,13 @@ python test_api_connection.py
 
 ### 技术文档
 
-查看 [docs/TECHNICAL_DOCUMENT.tex](docs/TECHNICAL_DOCUMENT.tex) 或编译后的 PDF 了解：
+查看项目根目录的 [技术文档.pdf](技术文档.pdf) 了解：
 - 系统架构设计
 - 功能模块详解
 - 动态需求生成机制
 - 三级上下文系统
 - 质量评分机制
 - 技术实现细节
-
-**编译技术文档：**
-```bash
-cd docs
-pdflatex TECHNICAL_DOCUMENT.tex
-# 或使用在线LaTeX编辑器（如Overleaf）
-```
 
 ---
 
@@ -239,7 +196,6 @@ pdflatex TECHNICAL_DOCUMENT.tex
 | 使用方式 | 适用场景 | API要求 | 功能完整度 | 推荐度 |
 |---------|---------|---------|-----------|-------|
 | simple_example.py | 快速测试、演示 | 可选（支持模拟） | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| test_multilevel.py | 多层次问答生成 | 必需 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 | main.py | 大规模生产 | 必需 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 | QuickStart_Tutorial.ipynb | 学习和实验 | 可选 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
 | Agent_OM_Gemini_Test.ipynb | 特定项目测试 | 必需 | ⭐⭐⭐ | ⭐⭐⭐ |
@@ -277,13 +233,11 @@ outputs/项目名/
 data/processed/
 ├── qa_pairs.json           # 问答对（JSON格式）
 ├── qa_pairs.jsonl          # 问答对（JSONL格式）
-├── design_solutions.json   # 设计方案
-├── design_solutions.jsonl
 ├── quality_report.json     # 质量报告
-├── finetuning_data.jsonl   # 微调格式（可选）
-├── train.jsonl             # 训练集（可选）
-├── validation.jsonl        # 验证集（可选）
-└── test.jsonl              # 测试集（可选）
+├── finetuning_data.jsonl   # 微调格式数据
+├── train.jsonl             # 训练集（80%）
+├── validation.jsonl        # 验证集（10%）
+└── test.jsonl              # 测试集（10%）
 ```
 
 ---
@@ -308,6 +262,21 @@ data/processed/
 ## 🆘 故障排除
 
 ### Q: 运行main.py没有输出？
+
+**完整命令示例：**
+```bash
+# 基本用法（仅生成QA对）
+python main.py --repo-path "/path/to/your/project" --scenario qa --num-qa 10
+
+# 生成QA对和设计方案
+python main.py --repo-path "/path/to/your/project" --scenario both --num-qa 15 --num-design 5
+
+# 使用自定义配置文件
+python main.py --repo-path "/path/to/your/project" --config config/config.yaml --scenario both --num-qa 20
+
+# 指定输出目录
+python main.py --repo-path "/path/to/your/project" --scenario qa --num-qa 10 --output-dir ./my_output
+```
 
 **解决方案：**
 1. 测试API连接：`python test_api_connection.py`
@@ -342,12 +311,7 @@ data/processed/
 **2025-12-19:**
 1. ✅ API预检机制 - 运行前自动测试API连接
 2. ✅ JSON响应清理 - 自动修复常见格式问题
-3. ✅ 多层次问答 - 支持代码/模块/架构三个层次
-4. ✅ 配置驱动测试 - test_config.json + test_multilevel.py
-5. ✅ 详细文档 - README + 技术文档完善
+3. ✅ 多层次上下文 - 支持 minimal/standard/full 三级上下文
+4. ✅ 质量评分系统 - 自动生成数据质量报告
+5. ✅ 数据集分割 - 自动生成训练/验证/测试集
 
----
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request!

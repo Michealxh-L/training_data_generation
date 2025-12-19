@@ -238,13 +238,6 @@ outputs/项目名/
 └── training_data_[timestamp].json    # 带时间戳的输出文件
 ```
 
-**特点：**
-- 📊 交互式可视化生成过程
-- 🔍 实时查看生成的每个问答对
-- 💾 自动保存到 `outputs/` 目录
-- ⚡ 支持快速测试和迭代
-- 📈 内置数据质量统计和分析
-
 **输出内容：**
 ```json
 {
@@ -268,23 +261,6 @@ outputs/项目名/
 
 ---
 
-## ⚠️ 已知限制
-
-1. **LLM响应格式**
-   - LLM返回格式可能不稳定（特别是main.py）
-   - 部分请求可能失败，但不影响已成功的数据
-   - 建议小批量生成（10-30个样本）
-
-2. **API速率限制**
-   - 注意API provider的配额限制
-   - 使用重试机制处理临时失败
-
-3. **代码库规模**
-   - 超大型代码库（1000+文件）分析较慢
-   - 建议限制分析文件数量
-
----
-
 ## 🆘 故障排除
 
 ### Q: 运行main.py没有输出？
@@ -304,11 +280,6 @@ python main.py --repo-path "/path/to/your/project" --config config/config.yaml -
 python main.py --repo-path "/path/to/your/project" --scenario qa --num-qa 10 --output-dir ./my_output
 ```
 
-**解决方案：**
-1. 测试API连接：`python test_api_connection.py`
-2. 减少生成数量：`--num-qa 2 --num-design 0`
-3. 改用更可靠的 `simple_example.py`
-4. 检查 `.env` 文件中的API密钥配置
 
 ### Q: JSON解析错误？
 
@@ -320,24 +291,9 @@ python main.py --repo-path "/path/to/your/project" --scenario qa --num-qa 10 --o
 ### Q: 如何提高生成成功率？
 
 **建议：**
-1. 使用更稳定的模型（GPT-4 > Gemini > GPT-3.5）
+1. 使用更稳定的模型
 2. 降低温度参数（0.3 推荐）
 3. 小批量生成（每次10-30个）
-4. 优先使用 `simple_generator.py`（更可靠）
 
-### Q: 支持哪些编程语言？
 
-**当前：** 主要支持 Python  
-**未来：** 计划支持 Java、JavaScript/TypeScript、Go
-
----
-
-## 🔄 最新更新
-
-**2025-12-19:**
-1. ✅ API预检机制 - 运行前自动测试API连接
-2. ✅ JSON响应清理 - 自动修复常见格式问题
-3. ✅ 多层次上下文 - 支持 minimal/standard/full 三级上下文
-4. ✅ 质量评分系统 - 自动生成数据质量报告
-5. ✅ 数据集分割 - 自动生成训练/验证/测试集
 

@@ -77,6 +77,7 @@ class QAPair(BaseModel):
     # Metadata
     difficulty: Literal["easy", "medium", "hard"] = Field(description="Question difficulty")
     tags: List[str] = Field(default_factory=list, description="Topic tags")
+    quality_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Quality score (0-1)")
     created_at: datetime = Field(default_factory=datetime.now)
     
     class Config:
@@ -128,6 +129,7 @@ class DesignSolution(BaseModel):
     estimated_effort: str = Field(description="Estimated implementation effort")
     risks: List[str] = Field(default_factory=list, description="Potential risks")
     tags: List[str] = Field(default_factory=list, description="Topic tags")
+    quality_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Quality score (0-1)")
     created_at: datetime = Field(default_factory=datetime.now)
     
     class Config:

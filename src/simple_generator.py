@@ -69,6 +69,73 @@ class SimpleGenerator:
         except:
             return ""
     
+    def _calculate_qa_quality_score(self, qa_data: Dict) -> float:
+        """计算问答对的质量评分
+        
+        评分标准：
+        - 问题质量 (0-0.25): 长度、具体性
+        - 答案质量 (0-0.35): 详细程度、深度
+        - 推理步骤 (0-0.25): 步骤数量和质量
+        - 代码上下文 (0-0.15): 是否包含相关代码
+        """
+        score = 0.0
+        
+        # 问题质量
+        question = qa_data.get('question', '')
+        q_words = len(question.split())
+        score += min(0.25, (q_words / 20) * 0.25)  # 20词为标准
+        
+        # 答案质量
+        answer = qa_data.get('answer', '')
+        a_words = len(answer.split())
+        score += min(0.35, (a_words / 100) * 0.35)  # 100词为标准
+        
+        # 推理步骤
+        reasoning = qa_data.get('reasoning_steps', [])
+        if reasoning:
+            num_steps = len(reasoning)
+            score += min(0.25, (num_steps / 5) * 0.25)  # 5步为标准
+        
+        # 代码上下文
+        if qa_data.get('code_context'):
+            score += 0.15
+        
+        return min(1.0, round(score, 3))
+    
+    def _calculate_design_quality_score(self, design_data: Dict) -> float:
+        """计算设计方案的质量评分
+        
+        评分标准：
+        - 方案概述 (0-0.20): 清晰度和完整性
+        - 实施步骤 (0-0.30): 步骤数量和详细度
+        - 文件修改 (0-0.25): 具体性和合理性
+        - 挑战分析 (0-0.25): 风险识别和应对
+        """
+        score = 0.0
+        
+        # 方案概述
+        solution = design_data.get('solution', '')
+        s_words = len(solution.split())
+        score += min(0.20, (s_words / 50) * 0.20)
+        
+        # 实施步骤
+        steps = design_data.get('implementation_steps', [])
+        if steps:
+            num_steps = len(steps)
+            score += min(0.30, (num_steps / 7) * 0.30)
+        
+        # 文件修改
+        files = design_data.get('files_to_modify', [])
+        if files:
+            score += min(0.25, (len(files) / 5) * 0.25)
+        
+        # 挑战分析
+        challenges = design_data.get('challenges', [])
+        if challenges:
+            score += min(0.25, (len(challenges) / 3) * 0.25)
+        
+        return min(1.0, round(score, 3))
+    
     def generate_qa_pair(self, code_snippet: str, file_path: str, use_context: bool = True, context_level: str = 'standard') -> Optional[Dict]:
         """生成单个问答对
         
@@ -172,6 +239,8 @@ Reasoning Steps:
                     'full': '系统架构层'
                 }.get(context_level, '未知')
             }
+            # 计算质量评分
+            parsed['quality_score'] = self._calculate_qa_quality_score(parsed)
         
         return parsed
     
@@ -239,6 +308,8 @@ Challenges:
                 'temperature': self.temperature,
                 'timestamp': datetime.now().isoformat()
             }
+            # 计算质量评分
+            parsed['quality_score'] = self._calculate_design_quality_score(parsed)
         
         return parsed
     

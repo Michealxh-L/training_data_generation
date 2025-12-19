@@ -41,9 +41,9 @@ models/
 *.pth
 *.safetensors
 
-# Logs
-logs/
-*.log
+# # Logs
+# logs/
+# *.log
 
 # IDE
 .vscode/

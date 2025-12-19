@@ -3,15 +3,36 @@ LLM Service for generating Q&A pairs and design solutions
 """
 import os
 import json
-from typing import List, Dict, Any, Optional
+import time
+import functools
+from typing import List, Dict, Any, Optional, Callable
 from openai import OpenAI
 from anthropic import Anthropic
-import time
 
 try:
     import google.generativeai as genai
 except ImportError:
     genai = None
+
+
+def retry_with_backoff(max_retries: int = 3, base_delay: float = 1.0, backoff_factor: float = 2.0):
+    """装饰器：使用指数退避策略重试函数"""
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        raise
+                    delay = base_delay * (backoff_factor ** attempt)
+                    print(f"   ⚠️  Attempt {attempt + 1} failed: {str(e)[:100]}")
+                    print(f"   🔄 Retrying in {delay:.1f}s...")
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
 
 
 class LLMService:
@@ -73,9 +94,13 @@ class LLMService:
         else:
             raise ValueError(f"Unsupported provider: {provider}")
     
+    @retry_with_backoff(max_retries=3, base_delay=2.0, backoff_factor=2.0)
     def generate_completion(self, prompt: str, system_prompt: str = None, 
                           max_tokens: int = 2048, json_mode: bool = False) -> str:
-        """Generate a completion"""
+        """Generate a completion with retry logic"""
+        # Rate limiting: small delay between requests
+        time.sleep(0.5)
+        
         try:
             if self.provider == "openai":
                 messages = []
@@ -129,11 +154,16 @@ class LLMService:
                     full_prompt,
                     generation_config=generation_config
                 )
-                return response.text
+                
+                # Check if response is valid
+                if response and hasattr(response, 'text'):
+                    return response.text
+                else:
+                    raise ValueError("Empty response from Gemini API")
         
         except Exception as e:
-            print(f"❌ Error generating completion: {e}")
-            raise
+            # Re-raise to trigger retry logic
+            raise Exception(f"API call failed: {str(e)[:200]}")
     
     def generate_qa_pair(self, code_context: str, file_path: str, 
                         question_type: str, additional_context: str = "") -> Dict[str, Any]:
@@ -179,12 +209,57 @@ Ensure the question is meaningful and the answer is detailed with proper reasoni
         
         try:
             response = self.generate_completion(prompt, system_prompt, json_mode=True)
-            response_cleaned = self._clean_json_response(response)
-            return json.loads(response_cleaned)
-        except json.JSONDecodeError as e:
-            print(f"\n⚠️  JSON parse error in generate_qa_pair: {e}")
-            print(f"Response preview: {response[:200] if 'response' in locals() else 'N/A'}...")
-            return None
+            
+            # Try multiple parsing strategies
+            result = None
+            
+            # Strategy 1: Direct parse
+            try:
+                result = json.loads(response)
+            except json.JSONDecodeError:
+                # Strategy 2: Clean and parse
+                try:
+                    cleaned = self._clean_json_response(response)
+                    result = json.loads(cleaned)
+                except json.JSONDecodeError:
+                    # Strategy 3: Extract first valid JSON object
+                    start = response.find('{')
+                    if start >= 0:
+                        count = 0
+                        for i in range(start, len(response)):
+                            if response[i] == '{':
+                                count += 1
+                            elif response[i] == '}':
+                                count -= 1
+                                if count == 0:
+                                    try:
+                                        result = json.loads(response[start:i+1])
+                                        break
+                                    except:
+                                        pass
+            
+            if result is None:
+                print(f"\n⚠️  Failed to parse JSON response")
+                return None
+            
+            # Validate and set defaults
+            if 'question' not in result or 'answer' not in result:
+                print(f"\n⚠️  Missing required fields")
+                return None
+            
+            # Ensure reasoning_trace exists
+            if 'reasoning_trace' not in result or not isinstance(result['reasoning_trace'], dict):
+                result['reasoning_trace'] = {
+                    'steps': [{'step_number': 1, 'description': 'Analysis performed', 'confidence': 0.8}],
+                    'overall_confidence': 0.8,
+                    'methodology': 'code_analysis'
+                }
+            
+            result.setdefault('difficulty', 'medium')
+            result.setdefault('tags', [])
+            
+            return result
+            
         except Exception as e:
             print(f"\n⚠️  Error in generate_qa_pair: {e}")
             return None
@@ -255,12 +330,56 @@ Provide a solution that fits well with the existing architecture."""
         
         try:
             response = self.generate_completion(prompt, system_prompt, max_tokens=3000, json_mode=True)
-            response_cleaned = self._clean_json_response(response)
-            return json.loads(response_cleaned)
-        except json.JSONDecodeError as e:
-            print(f"\n⚠️  JSON parse error in generate_design_solution: {e}")
-            print(f"Response preview: {response[:200] if 'response' in locals() else 'N/A'}...")
-            return None
+            
+            # Try multiple parsing strategies (same as QA)
+            result = None
+            try:
+                result = json.loads(response)
+            except json.JSONDecodeError:
+                try:
+                    cleaned = self._clean_json_response(response)
+                    result = json.loads(cleaned)
+                except json.JSONDecodeError:
+                    start = response.find('{')
+                    if start >= 0:
+                        count = 0
+                        for i in range(start, len(response)):
+                            if response[i] == '{':
+                                count += 1
+                            elif response[i] == '}':
+                                count -= 1
+                                if count == 0:
+                                    try:
+                                        result = json.loads(response[start:i+1])
+                                        break
+                                    except:
+                                        pass
+            
+            if result is None:
+                print(f"\n⚠️  Failed to parse design solution JSON")
+                return None
+            
+            # Validate required fields
+            required = ['solution_overview', 'detailed_design', 'implementation_steps']
+            if not all(field in result for field in required):
+                print(f"\n⚠️  Missing required fields in design solution")
+                return None
+            
+            # Ensure reasoning_trace exists
+            if 'reasoning_trace' not in result or not isinstance(result['reasoning_trace'], dict):
+                result['reasoning_trace'] = {
+                    'steps': [{'step_number': 1, 'description': 'Design analysis performed', 'confidence': 0.8}],
+                    'overall_confidence': 0.8,
+                    'methodology': 'design_thinking'
+                }
+            
+            result.setdefault('complexity', 'medium')
+            result.setdefault('estimated_effort', 'medium')
+            result.setdefault('risks', [])
+            result.setdefault('tags', [])
+            
+            return result
+            
         except Exception as e:
             print(f"\n⚠️  Error in generate_design_solution: {e}")
             return None

@@ -1,55 +1,48 @@
-# Training Data Generation Configuration
+# =============================================================================
+# 训练数据生成系统配置
+# =============================================================================
 
-# Code Analysis Settings
+# LLM 配置
+llm:
+  provider: "gemini"              # 可选: openai, anthropic, gemini
+  model: "gemini-2.5-flash"       # 模型名称
+  temperature: 0.3                # 温度参数 (0.2-0.4 推荐)
+  max_tokens: 2000                # 最大生成token数
+  retry_attempts: 3               # 重试次数
+
+# 生成配置
+generation:
+  samples_per_scenario: 50        # 每场景生成数量
+  num_qa_pairs: 10                # 问答对数量
+  num_design_solutions: 5         # 设计方案数量
+  use_context: true               # 启用上下文增强
+  context_level: "standard"       # 上下文级别: minimal/standard/full
+  
+  code_snippet_length: 800        # 代码片段长度
+  max_files: 20                   # 最多分析文件数
+  quality_threshold: 0.7          # 质量阈值
+  
+  max_attempts: 10                # 最大尝试次数
+  retry_delay: 2                  # 重试延迟（秒）
+
+# 代码分析配置
 code_analysis:
-  # Supported programming languages
   languages:
     - python
     - javascript
-    - typescript
     - java
   
-  # Maximum depth for code structure analysis
   max_depth: 5
-  
-  # File patterns to include/exclude
-  include_patterns:
-    - "**/*.py"
-    - "**/*.js"
-    - "**/*.ts"
-    - "**/*.java"
   
   exclude_patterns:
     - "**/node_modules/**"
-    - "**/venv/**"
-    - "**/dist/**"
-    - "**/build/**"
+    - "**/.venv/**"
     - "**/__pycache__/**"
     - "**/test/**"
     - "**/tests/**"
+    - "**/.git/**"
 
-# Data Generation Settings
-generation:
-  # Number of samples to generate per scenario
-  samples_per_scenario: 50
-  
-  # Quality threshold (0-1)
-  quality_threshold: 0.7
-  
-  # Diversity control
-  diversity:
-    max_similar_questions: 3
-    min_code_complexity: 2
-  
-  # LLM settings
-  llm:
-    provider: "openai"  # or "anthropic"
-    model: "gpt-4-turbo-preview"
-    temperature: 0.7
-    max_tokens: 2048
-    retry_attempts: 3
-
-# Scenario 1: Q&A Generation
+# 场景配置
 scenario1_qa:
   question_types:
     - "code_explanation"
@@ -57,48 +50,35 @@ scenario1_qa:
     - "design_pattern"
     - "error_handling"
     - "performance_optimization"
-  
-  # Include reasoning trace
   include_reasoning: true
-  
-  # Context window size (lines of code)
   context_window: 50
 
-# Scenario 2: Design Solution Generation
 scenario2_design:
   requirement_types:
     - "new_feature"
     - "refactoring"
     - "integration"
     - "optimization"
-  
-  # Architecture analysis depth
   architecture_depth: 3
-  
-  # Include implementation suggestions
   include_implementation: true
 
-# Data Quality Control
+# 质量控制
 quality_control:
-  # Validation checks
   validation:
     check_code_validity: true
     check_reasoning_completeness: true
     check_answer_relevance: true
   
-  # Filtering criteria
   filters:
     min_question_length: 10
     min_answer_length: 50
     min_code_snippet_lines: 5
 
-# Output Settings
+# 输出配置
 output:
-  format: "jsonl"  # jsonl, json, or parquet
+  format: "jsonl"
   split_ratios:
     train: 0.8
     validation: 0.1
     test: 0.1
-  
-  # Save reasoning traces separately
   save_traces: true

@@ -68,13 +68,41 @@ def main():
     print("STEP 2: Initialize LLM Service")
     print("="*70)
     
-    llm_config = config['generation']['llm']
-    llm_service = LLMService(
-        provider=llm_config['provider'],
-        model=llm_config['model'],
-        temperature=llm_config['temperature']
-    )
-    print(f"✅ LLM service initialized: {llm_config['provider']} - {llm_config['model']}")
+    llm_config = config['llm']
+    
+    try:
+        llm_service = LLMService(
+            provider=llm_config['provider'],
+            model=llm_config['model'],
+            temperature=llm_config['temperature']
+        )
+        print(f"✅ LLM service initialized: {llm_config['provider']} - {llm_config['model']}")
+        
+        # Test API connectivity
+        print("\n🔍 Testing API connectivity...")
+        try:
+            test_response = llm_service.generate_completion(
+                prompt="Return only the word 'OK'",
+                max_tokens=10
+            )
+            if test_response and len(test_response.strip()) > 0:
+                print(f"✅ API test successful: {test_response.strip()[:50]}")
+            else:
+                print("⚠️  API returned empty response")
+                raise ValueError("API test failed: empty response")
+        except Exception as test_error:
+            print(f"❌ API test failed: {test_error}")
+            print("\n⚠️  无法连接到LLM API。请检查：")
+            print(f"   1. API密钥是否在.env文件中配置")
+            print(f"   2. 网络连接是否正常")
+            print(f"   3. API配额是否充足")
+            print("\n💡 提示：可以使用 simple_example.py 进行测试（支持模拟模式）")
+            return 1
+            
+    except Exception as init_error:
+        print(f"❌ LLM service initialization failed: {init_error}")
+        print("\n⚠️  服务初始化失败。请检查配置文件和环境变量。")
+        return 1
     
     # Initialize dataset
     dataset = TrainingDataset(

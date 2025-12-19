@@ -1,430 +1,353 @@
-# 智能训练数据生成与处理系统
+# 训练数据生成系统
 
-> 为 Qwen 2.5 系列模型微调自动生成高质量训练数据
+> 基于代码仓库自动生成LLM训练数据
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## 项目概述
 
-## 📋 项目概述
+自动化生成训练数据，支持两个核心场景：
 
-本系统旨在自动化生成和处理训练数据，支持基于本地代码仓的 LLM 模型微调。系统可以：
+- **场景1**：代码问答对生成（含推理轨迹）
+- **场景2**：架构设计方案生成
 
-- 🎯 **场景 1**：自动生成代码问答对，包含完整的推理轨迹
-- 🏗️ **场景 2**：根据需求生成架构设计方案，提供详细实现步骤
-- 📊 **数据验证**：自动评估数据质量，确保训练效果
-- 🔄 **多格式导出**：支持 JSONL、JSON 等多种格式
-
-### 核心特性
-
-- ✅ 自动化代码分析（Python、JavaScript、Java、TypeScript）
-- ✅ LLM 驱动的智能问答生成
-- ✅ 推理轨迹 (Reasoning Trace) 生成
-- ✅ 架构感知的设计方案生成
-- ✅ 多维度数据质量评估
-- ✅ 支持 OpenAI 和 Anthropic API
-- ✅ 数据集自动划分（Train/Val/Test）
-- ✅ 开箱即用的微调格式
+核心特性：
+- 支持任意GitHub项目或本地代码仓
+- 项目上下文感知，提升问答质量
+- **动态需求生成**，避免设计方案重复
+- 支持多种LLM Provider (OpenAI/Anthropic/Gemini)
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
-### 1. 安装依赖
-
+### 安装依赖
 ```bash
-# 克隆项目
-git clone <repository-url>
-cd training_data_generation
-
-# 创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或 venv\Scripts\activate  # Windows
-
-# 安装依赖
 pip install -r requirements.txt
+cp .env.example .env  # 配置API密钥
 ```
 
-### 2. 配置 API 密钥
+### 使用方式
 
+**交互式Notebook（推荐）**
 ```bash
-# 复制配置文件
-cp .env.example .env
+jupyter notebook QuickStart_Tutorial.ipynb
+```
 
-# 编辑 .env 文件，填入你的 API 密钥
-# OPENAI_API_KEY=your_key_here
+**一行代码**
+```python
+from src.simple_generator import quick_generate
+dataset = quick_generate("./your-project", num_qa=10, num_design=5)
+```
+
+**命令行**
+```bash
+python simple_example.py  # 交互式
 # 或
-# ANTHROPIC_API_KEY=your_key_here
+python main.py --repo-path ./project --scenario both --num-qa 30
 ```
 
-### 3. 运行示例
-
-```bash
-# 生成示例数据（不调用 API）
-python examples/generate_samples.py
-
-# 或使用 demo 脚本
-bash examples/demo.sh
-```
-
-### 4. 从真实代码仓生成数据
-
-```bash
-# 使用公开的 GitHub 仓库
-git clone https://github.com/pallets/flask.git repos/flask
-
-# 生成训练数据
-python main.py \
-  --repo-path repos/flask \
-  --scenario both \
-  --num-qa 30 \
-  --num-design 10
-```
-
----
-
-## 📖 详细文档
-
-### 文档导航
-
-- 📘 [设计文档](docs/DESIGN.md) - 完整的系统设计、数据结构、架构说明
-- 📋 [交付总结](docs/SUMMARY.md) - 项目完成情况、评判标准对照
-- ⚡ [快速参考](docs/QUICK_REFERENCE.md) - 命令速查、配置说明、常见问题
-
-### 系统架构
-
-系统采用模块化设计，分为以下核心模块：
+## 项目结构
 
 ```
-📦 training_data_generation
-├── 📁 src/
-│   ├── analyzer.py          # 代码仓库分析
-│   ├── llm_service.py       # LLM API 服务
-│   ├── qa_generator.py      # 问答对生成
-│   ├── design_generator.py  # 设计方案生成
-│   ├── data_processor.py    # 数据处理与验证
-│   └── schema.py            # 数据模型定义
-├── 📁 config/               # 配置文件
-├── 📁 docs/                 # 详细文档
-├── 📁 examples/             # 示例代码
-├── 📁 data/                 # 数据输出目录
-└── main.py                  # 主程序入口
+├── src/                         # 核心代码
+│   ├── simple_generator.py     # 主生成器
+│   ├── context_analyzer.py     # 上下文分析
+│   └── ...
+├── config/                      # 配置文件
+├── QuickStart_Tutorial.ipynb   # 教程
+└── simple_example.py           # CLI工具
 ```
 
-详细设计文档：[docs/DESIGN.md](docs/DESIGN.md)
+## 数据格式
 
-### 数据格式
-
-#### 场景 1：问答对格式
-
+**场景1：问答对**
 ```json
 {
-  "id": "uuid",
-  "question": "这个函数的主要功能是什么？",
-  "answer": "详细的答案...",
-  "question_type": "code_explanation",
-  "code_contexts": [
-    {
-      "file_path": "src/module.py",
-      "start_line": 10,
-      "end_line": 30,
-      "code_snippet": "def function_name():\n    ...",
-      "language": "python"
-    }
-  ],
-  "reasoning_trace": {
-    "steps": [
-      {
-        "step_number": 1,
-        "description": "分析函数签名",
-        "code_reference": "def function_name(params)",
-        "confidence": 0.9
-      }
-    ],
-    "overall_confidence": 0.87,
-    "methodology": "自顶向下分析法"
-  },
-  "difficulty": "medium",
-  "tags": ["authentication", "security"]
+  "question": "函数功能是什么？",
+  "answer": "详细答案...",
+  "reasoning_steps": ["步骤1", "步骤2"],
+  "code_context": "def function()...",
+  "source_file": "main.py"
 }
 ```
 
-#### 场景 2：设计方案格式
-
+**场景2：设计方案**
 ```json
 {
-  "id": "uuid",
-  "requirement": "添加用户认证功能",
-  "requirement_type": "new_feature",
-  "solution_overview": "采用 JWT 进行无状态认证...",
-  "detailed_design": "详细设计说明...",
-  "implementation_steps": [
-    "1. 安装 PyJWT 库",
-    "2. 创建 JWT 工具类",
-    "3. 实现认证中间件"
-  ],
-  "architecture_context": {
-    "components": [...],
-    "design_patterns": ["Repository Pattern"],
-    "tech_stack": {"web_framework": "FastAPI"},
-    "architecture_type": "RESTful API"
-  },
-  "reasoning_trace": { ... },
-  "complexity": "medium",
-  "estimated_effort": "3-5 天"
+  "requirement": "添加认证功能",
+  "solution": "采用JWT...",
+  "steps": ["步骤1", "步骤2"],
+  "files_to_modify": [{"file": "auth.py", "reason": "..."}]
 }
 ```
 
----
+## 配置
 
-## 🎯 使用指南
-
-### 基本用法
-
-```bash
-# 生成问答对
-python main.py --repo-path /path/to/repo --scenario qa --num-qa 50
-
-# 生成设计方案
-python main.py --repo-path /path/to/repo --scenario design --num-design 20
-
-# 同时生成两种数据
-python main.py --repo-path /path/to/repo --scenario both --num-qa 30 --num-design 10
-```
-
-### 高级配置
-
-编辑 `config/config.yaml` 自定义生成参数：
-
+编辑 `config/simple_config.yaml`:
 ```yaml
+llm:
+  provider: "gemini"
+  model: "gemini-2.5-flash"
+  temperature: 0.3
+
 generation:
-  samples_per_scenario: 50
-  quality_threshold: 0.7
-  llm:
-    provider: "openai"  # 或 "anthropic"
-    model: "gpt-4-turbo-preview"
-    temperature: 0.7
+  num_qa_pairs: 10
+  num_design_solutions: 5
+  use_context: true  # 启用项目上下文分析
+```
+## 使用示例
 
-scenario1_qa:
-  question_types:
-    - "code_explanation"
-    - "business_logic"
-    - "design_pattern"
+### 1. 交互式快速开始 (simple_example.py)
 
-scenario2_design:
-  requirement_types:
-    - "new_feature"
-    - "refactoring"
-    - "integration"
+**最简单的方式**，支持模拟模式，无需API密钥即可测试：
+
+```bash
+python simple_example.py
 ```
 
-### 输出文件
+**交互式配置：**
+- 选择项目路径
+- 选择生成场景（QA/设计方案/两者）
+- 设置生成数量
+- 选择上下文级别（minimal/standard/full）
 
-生成的数据保存在 `data/processed/` 目录：
-
-```
-data/processed/
-├── qa_pairs.jsonl              # Q&A 对（JSONL）
-├── qa_pairs.json               # Q&A 对（JSON）
-├── design_solutions.jsonl      # 设计方案（JSONL）
-├── design_solutions.json       # 设计方案（JSON）
-├── finetuning_data.jsonl       # 微调格式数据
-├── train.jsonl                 # 训练集
-├── validation.jsonl            # 验证集
-├── test.jsonl                  # 测试集
-└── quality_report.json         # 质量报告
-```
+**输出：** `outputs/项目名/training_data.json`
 
 ---
 
-## 📊 数据质量
+### 2. 多层次问答生成 (test_multilevel.py)
 
-### 质量评估维度
+**配置驱动**，支持三级上下文系统：
 
-| 维度 | 评估标准 | 权重 |
-|------|----------|------|
-| 问题质量 | 长度、清晰度、相关性 | 20% |
-| 答案质量 | 完整性、准确性、详细度 | 30% |
-| 代码上下文 | 相关性、完整性 | 20% |
-| 推理质量 | 步骤完整性、逻辑性、置信度 | 30% |
+```bash
+python test_multilevel.py
+```
 
-### 自动验证
+**特点：**
+- 基于 `test_config.json` 配置文件
+- 支持代码实现层/模块设计层/系统架构层问题生成
+- 自动生成统计报告
 
-系统自动验证每个样本：
-
-- ✅ 问题长度 ≥ 5 个单词
-- ✅ 答案长度 ≥ 20 个单词
-- ✅ 至少包含 1 个代码上下文
-- ✅ 推理步骤 ≥ 2 步
-- ✅ 整体置信度 ≥ 0.5
-
-### 质量报告示例
-
+**配置示例：**
 ```json
 {
-  "qa_pairs": {
-    "total": 50,
-    "valid": 48,
-    "avg_quality_score": 0.856,
-    "question_types": {
-      "code_explanation": 15,
-      "business_logic": 12
-    }
+  "project": {
+    "path": "./your-project",
+    "name": "MyProject"
   },
-  "overall": {
-    "total_samples": 70,
-    "overall_quality": 0.845
+  "generation": {
+    "num_qa_pairs": 15,
+    "context_levels": ["minimal", "standard", "full"]
   }
 }
 ```
 
 ---
 
-## 🔧 核心功能
+### 3. 完整流程 (main.py)
 
-### 1. 代码分析
-
-```python
-from src.analyzer import RepositoryAnalyzer
-
-analyzer = RepositoryAnalyzer("/path/to/repo")
-analyzer.analyze(languages=['python', 'javascript'])
-
-# 获取复杂函数
-complex_functions = analyzer.get_functions_by_complexity(min_complexity=3)
-
-# 搜索代码
-results = analyzer.search_code("authenticate")
-```
-
-### 2. 问答生成
-
-```python
-from src.qa_generator import QAGenerator
-
-generator = QAGenerator(analyzer, llm_service)
-qa_pairs = generator.generate_qa_pairs(
-    num_samples=50,
-    question_types=['code_explanation', 'business_logic']
-)
-```
-
-### 3. 设计方案生成
-
-```python
-from src.design_generator import DesignSolutionGenerator
-
-generator = DesignSolutionGenerator(analyzer, llm_service)
-solutions = generator.generate_design_solutions(
-    num_samples=20,
-    requirement_types=['new_feature', 'refactoring']
-)
-```
-
-### 4. 数据处理
-
-```python
-from src.data_processor import DataProcessor, DataValidator
-
-# 验证数据
-validator = DataValidator()
-report = validator.generate_report(qa_pairs, design_solutions)
-
-# 导出数据
-processor = DataProcessor("data/processed")
-processor.export_to_jsonl(qa_pairs, "qa_pairs.jsonl")
-processor.export_for_finetuning(qa_pairs, design_solutions)
-```
-
----
-
-## 🎓 模型微调
-
-### OpenAI Fine-tuning
+**功能最完整**，包含代码分析、质量评分、数据验证：
 
 ```bash
-# 准备数据
-python main.py --repo-path /path/to/repo --scenario both
-
-# 上传训练文件
-openai api fine_tunes.create \
-  -t data/processed/finetuning_data.jsonl \
-  -m gpt-3.5-turbo
-
-# 查看微调状态
-openai api fine_tunes.follow -i <YOUR_FINE_TUNE_ID>
+python main.py \
+  --repo-path "/path/to/repo" \
+  --config config/config.yaml \
+  --scenario both \
+  --num-qa 30 \
+  --num-design 10
 ```
 
-### 自定义微调（可选）
+**命令行参数：**
+- `--repo-path`: 代码仓库路径（必填）
+- `--scenario`: 生成场景 (qa/design/both)
+- `--num-qa`: QA对数量（默认30）
+- `--num-design`: 设计方案数量（默认10）
+- `--config`: 配置文件路径
+- `--output-dir`: 输出目录
 
-如果使用开源模型（如 Qwen）：
+**输出文件：**
+- `qa_pairs_[timestamp].json` - 问答对数据
+- `design_solutions_[timestamp].json` - 设计方案数据
+- `quality_report_[timestamp].json` - 质量报告
 
-```python
-# examples/finetune_qwen.py
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
+---
 
-# 加载数据
-dataset = load_dataset('json', data_files={
-    'train': 'data/processed/train.jsonl',
-    'validation': 'data/processed/validation.jsonl'
-})
+### 4. Jupyter Notebook
 
-# 加载模型
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-7B")
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-7B")
+#### QuickStart_Tutorial.ipynb（推荐）
 
-# 微调配置
-training_args = TrainingArguments(
-    output_dir="./models/qwen-finetuned",
-    num_train_epochs=3,
-    per_device_train_batch_size=4,
-    learning_rate=2e-5
-)
+**交互式教程**，包含完整示例和说明：
 
-# 开始训练
-trainer = Trainer(model=model, args=training_args, train_dataset=dataset['train'])
-trainer.train()
+```bash
+jupyter notebook QuickStart_Tutorial.ipynb
+```
+
+**内容：**
+1. 环境设置和API配置
+2. 简单生成器使用示例
+3. 多层次问答生成演示
+4. 数据格式和质量分析
+5. 常见问题排查
+
+#### Agent_OM_Gemini_Test.ipynb
+
+**特定项目测试**，针对 Agent-OM 项目：
+
+```bash
+jupyter notebook Agent_OM_Gemini_Test.ipynb
 ```
 
 ---
 
-## 📈 性能与成本
+### 5. API连接测试
 
-### 生成速度
+在生成数据前测试API连接：
 
-- 单个 Q&A 对：约 5-10 秒（取决于 LLM 响应速度）
-- 单个设计方案：约 10-15 秒
-- 100 个样本：约 10-15 分钟
+```bash
+python test_api_connection.py
+```
 
-### API 成本估算（GPT-4）
-
-- Q&A 对：约 $0.02-0.03 per sample
-- 设计方案：约 $0.05-0.08 per sample
-- 100 样本总成本：约 $3-5
-
-💡 **成本优化建议**：
-- 使用 GPT-3.5 Turbo 降低成本（质量略降）
-- 批量生成时使用缓存避免重复
-- 对于简单问题使用本地模型
+**测试内容：**
+- ✅ 简单文本生成
+- ✅ JSON格式响应
+- ✅ 代码理解能力
 
 ---
 
-## 📧 联系方式
+## 📚 文档
 
-如有问题或建议，请提交 Issue 或联系维护者。
+### 技术文档
+
+查看 [docs/TECHNICAL_DOCUMENT.tex](docs/TECHNICAL_DOCUMENT.tex) 或编译后的 PDF 了解：
+- 系统架构设计
+- 功能模块详解
+- 动态需求生成机制
+- 三级上下文系统
+- 质量评分机制
+- 技术实现细节
+
+**编译技术文档：**
+```bash
+cd docs
+pdflatex TECHNICAL_DOCUMENT.tex
+# 或使用在线LaTeX编辑器（如Overleaf）
+```
 
 ---
 
-## 🎯 项目目标
+## 使用场景对比
 
-通过本系统生成的训练数据，期望模型具备：
-
-✅ 深入理解代码的业务逻辑和实现细节  
-✅ 提供带推理过程的代码解释  
-✅ 基于现有架构生成合理的设计方案  
-✅ 考虑实现复杂度和潜在风险  
-✅ 成为优秀的代码理解助手和架构设计顾问  
+| 使用方式 | 适用场景 | API要求 | 功能完整度 | 推荐度 |
+|---------|---------|---------|-----------|-------|
+| simple_example.py | 快速测试、演示 | 可选（支持模拟） | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| test_multilevel.py | 多层次问答生成 | 必需 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| main.py | 大规模生产 | 必需 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| QuickStart_Tutorial.ipynb | 学习和实验 | 可选 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| Agent_OM_Gemini_Test.ipynb | 特定项目测试 | 必需 | ⭐⭐⭐ | ⭐⭐⭐ |
 
 ---
 
-**Happy Training! 🚀**
+## 输出格式
+
+### Simple Generator 输出
+
+```
+outputs/项目名/
+└── training_data.json    # 包含所有数据的单一文件
+```
+
+**内容结构：**
+```json
+{
+  "qa_pairs": [...],
+  "design_solutions": [...],
+  "metadata": {
+    "generated_at": "2025-12-19T12:00:00",
+    "levels": {
+      "minimal": {...},
+      "standard": {...},
+      "full": {...}
+    }
+  }
+}
+```
+
+### Main.py 输出
+
+```
+data/processed/
+├── qa_pairs.json           # 问答对（JSON格式）
+├── qa_pairs.jsonl          # 问答对（JSONL格式）
+├── design_solutions.json   # 设计方案
+├── design_solutions.jsonl
+├── quality_report.json     # 质量报告
+├── finetuning_data.jsonl   # 微调格式（可选）
+├── train.jsonl             # 训练集（可选）
+├── validation.jsonl        # 验证集（可选）
+└── test.jsonl              # 测试集（可选）
+```
+
+---
+
+## ⚠️ 已知限制
+
+1. **LLM响应格式**
+   - LLM返回格式可能不稳定（特别是main.py）
+   - 部分请求可能失败，但不影响已成功的数据
+   - 建议小批量生成（10-30个样本）
+
+2. **API速率限制**
+   - 注意API provider的配额限制
+   - 使用重试机制处理临时失败
+
+3. **代码库规模**
+   - 超大型代码库（1000+文件）分析较慢
+   - 建议限制分析文件数量
+
+---
+
+## 🆘 故障排除
+
+### Q: 运行main.py没有输出？
+
+**解决方案：**
+1. 测试API连接：`python test_api_connection.py`
+2. 减少生成数量：`--num-qa 2 --num-design 0`
+3. 改用更可靠的 `simple_example.py`
+4. 检查 `.env` 文件中的API密钥配置
+
+### Q: JSON解析错误？
+
+**说明：** 这是已知问题
+- 系统已添加错误处理，不会中断流程
+- 成功的数据会正常保存
+- 查看控制台日志了解详细错误信息
+
+### Q: 如何提高生成成功率？
+
+**建议：**
+1. 使用更稳定的模型（GPT-4 > Gemini > GPT-3.5）
+2. 降低温度参数（0.3 推荐）
+3. 小批量生成（每次10-30个）
+4. 优先使用 `simple_generator.py`（更可靠）
+
+### Q: 支持哪些编程语言？
+
+**当前：** 主要支持 Python  
+**未来：** 计划支持 Java、JavaScript/TypeScript、Go
+
+---
+
+## 🔄 最新更新
+
+**2025-12-19:**
+1. ✅ API预检机制 - 运行前自动测试API连接
+2. ✅ JSON响应清理 - 自动修复常见格式问题
+3. ✅ 多层次问答 - 支持代码/模块/架构三个层次
+4. ✅ 配置驱动测试 - test_config.json + test_multilevel.py
+5. ✅ 详细文档 - README + 技术文档完善
+
+---
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request!

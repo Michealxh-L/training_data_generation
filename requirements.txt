@@ -23,6 +23,11 @@ python-dotenv>=1.0.0
 rich>=13.7.0
 pyyaml>=6.0.1
 
+# Development dependencies (optional)
+# jupyter>=1.0.0
+# notebook>=7.0.0
+# ipykernel>=6.25.0
+
 # Optional: For model fine-tuning
 # transformers>=4.36.0
 # torch>=2.1.0

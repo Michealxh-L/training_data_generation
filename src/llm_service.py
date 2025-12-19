@@ -17,6 +17,43 @@ except ImportError:
 class LLMService:
     """Service for interacting with LLM APIs"""
     
+    @staticmethod
+    def _clean_json_response(response: str) -> str:
+        """Clean LLM response to extract valid JSON"""
+        response_cleaned = response.strip()
+        
+        # Remove markdown code blocks if present
+        if response_cleaned.startswith('```'):
+            lines = response_cleaned.split('\n')
+            # Remove first line (```json or ```)
+            if lines[0].startswith('```'):
+                lines = lines[1:]
+            # Remove last line if it's ```
+            if lines and lines[-1].strip() == '```':
+                lines = lines[:-1]
+            response_cleaned = '\n'.join(lines).strip()
+                # Try to fix common JSON issues
+        try:
+            # First try parsing as-is
+            json.loads(response_cleaned)
+            return response_cleaned
+        except json.JSONDecodeError:
+            # If failed, try to extract JSON object from partial response
+            # Find the last complete closing brace
+            brace_count = 0
+            last_valid_pos = -1
+            for i, char in enumerate(response_cleaned):
+                if char == '{':
+                    brace_count += 1
+                elif char == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        last_valid_pos = i + 1
+            
+            if last_valid_pos > 0:
+                response_cleaned = response_cleaned[:last_valid_pos]
+                return response_cleaned
+    
     def __init__(self, provider: str = "openai", model: str = None, temperature: float = 0.7):
         self.provider = provider.lower()
         self.temperature = temperature
@@ -140,8 +177,17 @@ Generate a JSON response with the following structure:
 
 Ensure the question is meaningful and the answer is detailed with proper reasoning steps."""
         
-        response = self.generate_completion(prompt, system_prompt, json_mode=True)
-        return json.loads(response)
+        try:
+            response = self.generate_completion(prompt, system_prompt, json_mode=True)
+            response_cleaned = self._clean_json_response(response)
+            return json.loads(response_cleaned)
+        except json.JSONDecodeError as e:
+            print(f"\n⚠️  JSON parse error in generate_qa_pair: {e}")
+            print(f"Response preview: {response[:200] if 'response' in locals() else 'N/A'}...")
+            return None
+        except Exception as e:
+            print(f"\n⚠️  Error in generate_qa_pair: {e}")
+            return None
     
     def generate_design_solution(self, requirement: str, architecture_context: Dict[str, Any],
                                 code_examples: List[Dict[str, str]], 
@@ -207,8 +253,17 @@ Generate a JSON response with the following structure:
 
 Provide a solution that fits well with the existing architecture."""
         
-        response = self.generate_completion(prompt, system_prompt, max_tokens=3000, json_mode=True)
-        return json.loads(response)
+        try:
+            response = self.generate_completion(prompt, system_prompt, max_tokens=3000, json_mode=True)
+            response_cleaned = self._clean_json_response(response)
+            return json.loads(response_cleaned)
+        except json.JSONDecodeError as e:
+            print(f"\n⚠️  JSON parse error in generate_design_solution: {e}")
+            print(f"Response preview: {response[:200] if 'response' in locals() else 'N/A'}...")
+            return None
+        except Exception as e:
+            print(f"\n⚠️  Error in generate_design_solution: {e}")
+            return None
     
     def validate_and_improve_qa(self, qa_data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate and improve a Q&A pair"""

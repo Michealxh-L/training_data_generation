@@ -195,6 +195,10 @@ class DesignSolutionGenerator:
                 requirement_type=requirement_type
             )
             
+            # Check if LLM returned valid response
+            if llm_response is None:
+                return None
+            
             # Parse affected components
             affected_components = llm_response.get('affected_components', [])
             

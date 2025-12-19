@@ -91,6 +91,10 @@ class QAGenerator:
                 additional_context=additional_context
             )
             
+            # Check if LLM returned valid response
+            if llm_response is None:
+                return None
+            
             # Create QAPair object
             qa_pair = QAPair(
                 id=str(uuid.uuid4()),

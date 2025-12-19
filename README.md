@@ -14,6 +14,11 @@
 - 项目上下文感知，提升问答质量
 - **多样性问答和需求生成**，避免重复
 - 支持多种LLM Provider (OpenAI/Anthropic/Gemini)
+---
+
+## 技术文档
+
+查看项目根目录的 [技术文档.pdf](技术文档.pdf) 了解更多技术细节。
 
 ---
 
@@ -81,12 +86,6 @@ graph TB
 | LLMService | LLM服务 | 重试机制、多Provider、容错 |
 | DataProcessor | 数据处理 | 格式转换、数据集分割 |
 | DataValidator | 质量评估 | 自动评分、生成报告 |
-
----
-
-## 技术文档
-
-查看项目根目录的 [技术文档.pdf](技术文档.pdf) 了解更多技术细节。
 
 ---
 

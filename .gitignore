@@ -24,15 +24,15 @@ wheels/
 *.egg
 
 # Data files
-data/raw/*
-data/processed/*
-data/cache/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/cache/.gitkeep
-*.jsonl
-*.json
-!config/*.json
+# data/raw/*
+# data/processed/*
+# data/cache/*
+# !data/raw/.gitkeep
+# !data/processed/.gitkeep
+# !data/cache/.gitkeep
+# *.jsonl
+# *.json
+# !config/*.json
 
 # Model files
 models/

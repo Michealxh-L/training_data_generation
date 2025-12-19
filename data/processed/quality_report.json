@@ -1,0 +1,27 @@
+{
+  "qa_pairs": {
+    "total": 2,
+    "valid": 2,
+    "invalid": 0,
+    "avg_quality_score": 0.836,
+    "question_types": {
+      "business_logic": 1,
+      "error_handling": 1
+    },
+    "languages": {
+      "python": 5
+    }
+  },
+  "design_solutions": {
+    "total": 0,
+    "valid": 0,
+    "invalid": 0,
+    "avg_quality_score": 0,
+    "requirement_types": {},
+    "complexity": {}
+  },
+  "overall": {
+    "total_samples": 2,
+    "overall_quality": 0.836
+  }
+}

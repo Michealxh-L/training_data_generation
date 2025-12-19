@@ -1,0 +1,86 @@
+{
+  "generated_at": "2025-12-19T14:47:11.985504",
+  "config": {
+    "project": {
+      "source": "https://github.com/qzc438-research/ontology-llm",
+      "name": "ontology-llm",
+      "description": "测试项目 - 本体学习LLM系统"
+    },
+    "generation": {
+      "num_qa": 10,
+      "num_design": 5,
+      "use_context": true,
+      "context_level": "standard"
+    },
+    "context_levels": {
+      "minimal": {
+        "description": "代码实现层",
+        "focus": "算法逻辑、数据结构、API使用",
+        "num_qa": 3
+      },
+      "standard": {
+        "description": "模块设计层",
+        "focus": "设计模式、模块交互、职责划分",
+        "num_qa": 4
+      },
+      "full": {
+        "description": "系统架构层",
+        "focus": "技术选型、扩展性设计、性能优化",
+        "num_qa": 3
+      }
+    },
+    "output": {
+      "directory": "outputs",
+      "filename": "training_data.json",
+      "save_metadata": true,
+      "pretty_print": true
+    },
+    "llm": {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "temperature": 0.3,
+      "max_tokens": 2000,
+      "retry_attempts": 3
+    },
+    "code_analysis": {
+      "snippet_length": 800,
+      "max_files": 20,
+      "exclude_patterns": [
+        "**/node_modules/**",
+        "**/.venv/**",
+        "**/__pycache__/**",
+        "**/test/**",
+        "**/.git/**"
+      ]
+    },
+    "logging": {
+      "level": "INFO",
+      "show_progress": true,
+      "save_logs": true,
+      "log_file": "outputs/generation.log"
+    }
+  },
+  "levels": {
+    "minimal": {
+      "description": "代码实现层",
+      "focus": "算法逻辑、数据结构、API使用",
+      "requested": 3,
+      "generated": 3,
+      "success_rate": 1.0
+    },
+    "standard": {
+      "description": "模块设计层",
+      "focus": "设计模式、模块交互、职责划分",
+      "requested": 4,
+      "generated": 4,
+      "success_rate": 1.0
+    },
+    "full": {
+      "description": "系统架构层",
+      "focus": "技术选型、扩展性设计、性能优化",
+      "requested": 3,
+      "generated": 3,
+      "success_rate": 1.0
+    }
+  }
+}

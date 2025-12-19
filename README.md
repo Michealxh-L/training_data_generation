@@ -13,15 +13,82 @@
 - 支持任意GitHub项目或本地代码仓
 - 项目上下文感知，提升问答质量
 - **多样性问答和需求生成**，避免重复
+- 支持多种LLM Provider (OpenAI/Anthropic/Gemini)
 
 ---
 
+## 系统架构
+
+```mermaid
+graph TB
+    subgraph "输入层"
+        A[代码仓库<br/>GitHub/本地]
+    end
+    
+    subgraph "分析层"
+        B[RepositoryAnalyzer<br/>代码结构分析]
+        C[ProjectContextAnalyzer<br/>项目上下文分析]
+    end
+    
+    subgraph "生成层"
+        D[QAGenerator<br/>问答对生成]
+        E[DesignSolutionGenerator<br/>设计方案生成]
+        F[SimpleGenerator<br/>简化生成器]
+    end
+    
+    subgraph "服务层"
+        G[LLMService<br/>多Provider支持<br/>重试+容错]
+    end
+    
+    subgraph "处理层"
+        H[DataProcessor<br/>数据导出]
+        I[DataValidator<br/>质量评分]
+    end
+    
+    subgraph "输出层"
+        J[JSON/JSONL格式<br/>训练/验证/测试集<br/>质量报告]
+    end
+    
+    A --> B
+    A --> C
+    B --> D
+    B --> E
+    C --> D
+    C --> E
+    C --> F
+    D --> G
+    E --> G
+    F --> G
+    G --> H
+    G --> I
+    H --> J
+    I --> J
+    
+    style A fill:#e1f5ff
+    style G fill:#fff3e0
+    style J fill:#e8f5e9
+```
+
+**核心模块说明：**
+
+| 模块 | 功能 | 特点 |
+|------|------|------|
+| RepositoryAnalyzer | 代码结构分析 | 提取函数、类、依赖关系 |
+| ProjectContextAnalyzer | 上下文分析 | 三级上下文系统（minimal/standard/full） |
+| QAGenerator | 问答生成 | 多类型问题，含推理轨迹 |
+| DesignSolutionGenerator | 设计方案生成 | 动态需求，避免重复 |
+| SimpleGenerator | 简化生成器 | 快速生成，支持模拟模式 |
+| LLMService | LLM服务 | 重试机制、多Provider、容错 |
+| DataProcessor | 数据处理 | 格式转换、数据集分割 |
+| DataValidator | 质量评估 | 自动评分、生成报告 |
+
+---
 
 ## 技术文档
 
-查看项目根目录的 [技术文档.pdf](技术文档.pdf) 了解：
+查看项目根目录的 [技术文档.pdf](技术文档.pdf) 了解更多技术细节。
 
-
+---
 
 ## 快速开始
 
